@@ -1,0 +1,107 @@
+import gym
+from gym import spaces
+import numpy as np
+import random
+
+class Patient(gym.Env):
+    def __init__(self):
+        super(Patient, self).__init__()
+
+        self.observation_space = spaces.Dict({
+            'glucose_level': spaces.Box(low=70, high=300, shape=(1,), dtype=np.float32),
+            'physical_activity': spaces.Discrete(6),
+            'motivation': spaces.Discrete(6),
+            'weight': spaces.Box(low=50, high=150, shape=(1,), dtype=np.float32)
+        })
+
+        self.action_space = spaces.Discrete(2)  # Two advice options: 0 and 1
+
+        # Initialize patient
+        self.age = random.randint(30, 70)
+        self.years_T2DM = random.randint(1, 20)
+        self.physical_activity = random.randint(0, 5)
+        self.glucose_level = random.uniform(70, 300)
+        self.weight = round(random.uniform(50, 150), 1)
+        self.motivation = random.randint(0, 5)
+
+    def step(self, action):
+        # Execute action (advice) and compute reward
+        new_patient_state = self.receive_advice(action)
+        reward = self.get_reward(new_patient_state)
+        done = False  # Episode termination condition
+        info = {}  # Additional info
+        return new_patient_state, reward, done, info
+
+    def reset(self):
+        # Reset patient's state
+        self.age = random.randint(30, 70)
+        self.years_T2DM = random.randint(1, 20)
+        self.physical_activity = random.randint(0, 5)
+        self.glucose_level = random.uniform(70, 300)
+        self.weight = round(random.uniform(50, 150), 1)
+        self.motivation = random.randint(0, 5)
+        return self.get_patient_state()
+
+    def receive_advice(self, action):
+        # Select advice based on the action
+        advice = "go walking/running" if action == 0 else "other advice"
+        # Update patient's state based on the received advice
+        advice_response = self.evaluate_advice(advice)
+        # Adjust patient's state based on advice response
+        if advice_response:
+            # If advice is effective, decrease glucose level
+            self.glucose_level -= random.uniform(5, 15)
+        else:
+            # If advice is not effective, increase glucose level
+            self.glucose_level += random.uniform(0, 10)
+        self.glucose_level = max(70, min(self.glucose_level, 300))
+
+        # Update motivation based on advice response
+        if advice_response:
+            self.motivation += 1
+            self.motivation = min(self.motivation, 5)
+        else:
+            self.motivation -= 1
+            self.motivation = max(self.motivation, 0)
+
+        return self.get_patient_state()
+
+    def evaluate_advice(self, advice):
+        # Evaluate the effectiveness of the advice based on patient's profile
+        if self.physical_activity < 3 and advice == "go walking/running":
+            return False  # Advice ineffective for patients with low physical activity
+        else:
+            return True  # Advice effective for other cases
+
+    def get_reward(self, new_patient_state):
+        # Compute reward based on how well the advice aligns with the patient's needs and goals
+        # Example: Positive reward for effective advice, negative reward for ineffective advice
+        # You can define your reward function based on your specific criteria
+        return 1  # Placeholder value for reward
+
+    def get_patient_state(self):
+        return {
+            "glucose_level": self.glucose_level,
+            "physical_activity": self.physical_activity,
+            "motivation": self.motivation,
+            "weight": self.weight
+        }
+
+
+def main():
+    env = Patient()
+
+    for day in range(7):  # Simulate for a week
+        print(f"Day {day + 1}:")
+        observation = env.reset()
+        for _ in range(3):  # Three times a day
+            # RL agent selects advice based on patient's state
+            action = env.action_space.sample()  # Replace with RL agent's action selection
+            observation, reward, done, info = env.step(action)
+            print(f"Advice for Patient: {action}")
+            print(f"Patient State: {observation}")
+            if done:
+                break
+
+if __name__ == "__main__":
+    main()
