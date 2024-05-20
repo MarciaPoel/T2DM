@@ -13,12 +13,13 @@ class EnvironmentPatient(gym.Env):
             'motivation': spaces.Discrete(6)
         })
 
-        self.action_space = spaces.Discrete(2)  # hoeveel acties - nu 2 acties (advies 1 & 2)
+        self.action_space = spaces.Discrete(3)  # 3 actions for now: walk, gym, diet
 
         # Initialize patient
         self.patient = generate_random_patient()
 
     def step(self, action):
+        #take action, return new state with reward, update patient state - on action and return observation
         new_patient = {
             'glucose_level': self.patient.glucose_level,
             'weight': self.patient.weight,
@@ -30,6 +31,14 @@ class EnvironmentPatient(gym.Env):
         info = {}  # Additional info
         return new_patient, reward, done, info
 
+    def send_advice(self, action):
+        if action == 0:
+            return "Take 1h walk"
+        elif action == 1:
+            return "Hit the gym"
+        elif action == 2:
+            return "Think about the diet"
+
     def reset(self):
         self.patient = generate_random_patient()
         return {
@@ -40,7 +49,10 @@ class EnvironmentPatient(gym.Env):
         }
 
     def get_reward(self, action):
-        # Calculate reward based on action -give advice - and patient's response
+        # quantify effectiveness advice - on patient response & long-term outcome
         # positive reward for effective advice, 
         # negative reward for ineffective advice
-        return 1
+        if patient.glucose_level <= 100:
+            return reward = 1
+        elif patient.glucose_level >= 126:
+            return reward = -1
