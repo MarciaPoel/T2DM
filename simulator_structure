@@ -1,0 +1,72 @@
+import gym
+
+class Environment(gym.env):
+    state = {}
+
+    def __init__(self):
+        self.state['motivation'] = -1
+        self.state['glucose'] = 60
+        self.state['went_to_gym'] = 0
+        self.state['age_in_years'] = 31
+    
+    def get_reward(self, state, agent_action):
+        if state['glucose'] > 50 and state['glucose'] < 100:
+            return 1
+        else:
+            if state['motivation'] > 0: # how realistic is it that we use this?
+                return 0.5
+            else:
+                return -1
+
+    def get_observation(self, state):
+        """
+        Fully observable environment.
+        """
+        return state
+    
+    def get_observation(self, prev_state, state):
+        """
+        Partially observable environment.
+        """
+        # which variables are observable? How does this impact learning performance?
+        observable_variables = ['age_in_years', 'glucose', 'went_to_gym']
+        observation = {}
+        for variable in observable_variables:
+            if variable == 'glucose':
+                # how does noise / measurement error impact the learning performance?
+                glucose_meter_noise = random.random(0, 1)
+                observation[variable] self.state[variable] + glucose_meter_noise
+            else:
+                observation[variable] = self.state[variable]
+        return observation
+    # observation = {
+    #   'glucose': 60,
+    #   'went_to_gym': 0,
+    # }
+
+    def next_glucose(self, state):
+        if self.state['age'] > 30:
+            self.state['glucose'] += 50
+        else:
+            self.state['glucose'] += 40
+
+    def next_state(self, state, lifestyle_coach_action):
+        if lifestyle_coach_action == 'motivate':
+            self.state['motivation'] += 1
+            self.state['glucose'] = self.next_glucose(state)
+            self.state['went_to_gym'] = 0
+        elif lifestyle_coach_action == 'glucose_down':
+            if self.state['motivation'] < 0:
+                self.state['glucose'] = self.next_glucose(state)
+                self.state['went_to_gym'] = 0
+            else: # motivation >= 0
+                self.state['glucose'] -= 10
+                self.state['motivation'] = self.state['motivation'] - 0.2
+                self.state['went_to_gym'] = 1
+
+    def step(self, lifestyle_coach_action):
+        self.next_state(self.state, lifestyle_coach_action)
+        
+        reward = self.get_reward(self.state, lifestyle_coach_action)
+        observation = self.get_observation(self.state)
+        return observation, reward, done, info
