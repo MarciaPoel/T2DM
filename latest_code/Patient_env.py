@@ -49,7 +49,7 @@ class PatientEnvironment(gym.Env):
         if state['age'] < 30:
             return state['glucose_level'] + 5
         elif 30 < state['age'] < 60:
-            return state['age'] + 10
+            return state['glucose_level'] + 10
         else:
             return state['glucose_level'] + 5
 
