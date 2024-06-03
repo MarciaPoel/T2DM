@@ -1,4 +1,6 @@
 import csv
+import numpy as np
+from Patient_data import generate_random_patient, Patient
 from Patient_env import PatientEnvironment
 
 np.random.seed(123)
