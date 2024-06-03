@@ -18,11 +18,15 @@ class PatientEnvironment(gym.Env):
 
         self.action_space = spaces.Discrete(3)  # manage_diet, hit_the_gym, glucose_down
 
-        self.reset()  # Initialize state
+        self.state = None
 
     def reset(self):
         """Resets the environment to an initial state (toestand patient) and returns an initial observation (stukje patient-actie daarop uitvoeren)."""
-        self.patient = generate_random_patient()
+        if patient is None:
+            self.patient = generate_random_patient()
+        else:
+            self.patient = patient
+            
         self.state = {
             'age': self.patient.age,
             'years_T2DM': self.patient.years_T2DM,
