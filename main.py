@@ -4,7 +4,6 @@ from Patient_env import PatientEnvironment
 import csv
 import numpy as np
 from Patient_data import generate_random_patient, Patient
-import pandas as pd
 import matplotlib.pyplot as plt
 
 np.random.seed(123)
@@ -26,8 +25,8 @@ env = PatientEnvironment()
 # Check if the environment follows the gymnasium interface
 check_env(env, warn=True)
 
-# Create the PPO model
-model = PPO("MlpPolicy", env, verbose=1)
+# Create the PPO model with adjusted parameters for more exploration
+model = PPO("MlpPolicy", env, verbose=1, n_steps=2048, batch_size=64, n_epochs=10, gamma=0.99, learning_rate=3e-4)
 
 # Train the agent
 model.learn(total_timesteps=10000)
@@ -44,23 +43,27 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
     writer2 = csv.writer(file2)
 
     writer1.writerow([
-        'Step', 'Action', 'Age', 'Years_T2DM', 'Physical_Activity',
+        'Patient', 'Step', 'Action', 'Age', 'Years_T2DM', 'Physical_Activity',
         'Glucose_Level', 'Weight', 'Motivation', 'Reward'
     ])
 
     writer2.writerow([
-        'Step', 'Action', 'Observation', 'Reward'
+        'Patient', 'Step', 'Action', 'Observation', 'Reward'
     ])
+
+    all_rewards = []
 
     # Simulate the environment
     num_steps = 1000
-    for patient in patients:
-        observation, _ = env.reset(patient)
+    for patient_index, patient in enumerate(patients):
+        observation, _ = env.reset(patient=patient)
+        episode_rewards = []
         for step in range(num_steps):
-            action, _ = model.predict(observation, deterministic=True)
+            action, _ = model.predict(observation, deterministic=False)  # Ensure exploration by using deterministic=False
             observation, reward, terminated, truncated, info = env.step(action)
+            episode_rewards.append(reward)
             writer1.writerow([
-                step + 1, action,
+                patient_index + 1, step + 1, action,
                 env.state['age'], env.state['years_T2DM'], env.state['physical_activity'],
                 round(env.state['glucose_level'], 2),
                 round(env.state['weight'], 1),
@@ -68,7 +71,18 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
                 reward
             ])
             writer2.writerow([
-                step + 1, action, observation.tolist(), reward
+                patient_index + 1, step + 1, action, observation.tolist(), reward
             ])
+            if terminated or truncated:
+                break
+        all_rewards.append(np.mean(episode_rewards))
 
 print("Simulation completed, results saved in 'patient_simulation.csv' and 'decisions_log.csv'.")
+
+# Plotting the average reward per episode
+plt.plot(all_rewards)
+plt.xlabel('Episode')
+plt.ylabel('Average Reward')
+plt.title('Average Reward per Episode Over Time')
+plt.savefig('learning_curve.png')
+plt.show()

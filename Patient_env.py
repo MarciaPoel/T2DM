@@ -60,16 +60,16 @@ class PatientEnvironment(gym.Env):
         return state['glucose_level'] + base_fluctuations * weight_factor + effect
 
     def update_motivation(self, state, coach_action):
-            motivation_increase = 0
-            if action in [0, 2, 3, 4, 10, 11]:
-                motivation_increase = 0.1
-            elif action == 6:  
-                if state['motivation'] < 1:
-                    motivation_increase = 0.2
-            
-            # Motivation noise
-            noise = random.uniform(-0.1, 0.1)
-            state['motivation'] = min(max(state['motivation'] + motivation_increase + noise, 0), 5)
+        motivation_increase = 0
+        if coach_action in [0, 2, 3, 4, 10, 11]:
+            motivation_increase = 0.1
+        elif coach_action == 6:  
+            if state['motivation'] < 1:
+                motivation_increase = 0.2
+        
+        # Motivation noise
+        noise = random.uniform(-0.1, 0.1)
+        state['motivation'] = min(max(state['motivation'] + motivation_increase + noise, 0), 5)
 
     def next_state(self, coach_action):
         effect = 0
@@ -117,7 +117,7 @@ class PatientEnvironment(gym.Env):
 
         self.state['glucose_level'] = self.next_glucose(self.state, effect)
         
-        #Local bounds
+        # Local bounds
         self.state['glucose_level'] = max(0, self.state['glucose_level'])
         self.state['motivation'] = max(0, min(self.state['motivation'], 5))
         self.state['weight'] = max(0, self.state['weight'])
