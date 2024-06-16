@@ -3,21 +3,11 @@ from stable_baselines3.common.env_checker import check_env
 from Patient_env import PatientEnvironment
 import csv
 import numpy as np
-from Patient_data import generate_random_patient, Patient
+from Patient_data import generate_random_patient, Patient, set_seed
 import matplotlib.pyplot as plt
 
-np.random.seed(123)
-
-def get_patients(number_patients):
-    return [generate_random_patient() for _ in range(number_patients)]
-
-number_patients = 10
-patients = get_patients(number_patients)
-
-for i, patient in enumerate(patients):
-    print(f'Patient {i+1}: Age={patient.age}, Years_T2DM={patient.years_T2DM}, '
-          f'Physical Activity={patient.physical_activity}, Glucose Level={patient.glucose_level}, '
-          f'Weight={patient.weight}, Motivation={patient.motivation}')
+# Ensure dataset exists
+import create_dataset
 
 # Create the environment
 env = PatientEnvironment()
@@ -55,8 +45,8 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
 
     # Simulate the environment
     num_steps = 1000
-    for patient_index, patient in enumerate(patients):
-        observation, _ = env.reset(patient=patient)
+    for patient_index in range(env.total_patients):
+        observation, _ = env.reset(seed=123)
         episode_rewards = []
         for step in range(num_steps):
             action, _ = model.predict(observation, deterministic=False)  # Ensure exploration by using deterministic=False
@@ -76,6 +66,7 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
             if terminated or truncated:
                 break
         all_rewards.append(np.mean(episode_rewards))
+        env.next_patient()  # Move to the next patient
 
 print("Simulation completed, results saved in 'patient_simulation.csv' and 'decisions_log.csv'.")
 
