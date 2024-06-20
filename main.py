@@ -21,7 +21,7 @@ check_env(env, warn=True)
 total_timesteps = 500000
 
 # Create the PPO model with adjusted parameters for more exploration
-model = PPO("MlpPolicy", env, verbose=1, n_steps=2048, batch_size=64, n_epochs=10, gamma=0.99, learning_rate=3e-4, ent_coef = 0.01)
+model = PPO("MlpPolicy", env, verbose=1, n_steps=2048, batch_size=64, n_epochs=10, gamma=0.99, learning_rate=3e-4, ent_coef = 0.04)
 
 # Train the agent
 model.learn(total_timesteps=total_timesteps)

@@ -39,7 +39,7 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
 
     writer1.writerow([
         'Patient', 'Step', 'Action', 'Age', 'Years_T2DM', 'Physical_Activity',
-        'Glucose_Level', 'Weight', 'Motivation', 'Stress_Level', 'Reward'
+        'Glucose_Level', 'Weight', 'Motivation', 'Reward'
     ])
 
     writer2.writerow([
@@ -50,21 +50,19 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
     glucose_levels = []
     motivation_levels = []
     weights = []
-    stress_levels = []
     action_summary = {action: 0 for action in range(env.action_space.n)}
     patient_rewards = defaultdict(list)
     patient_actions = defaultdict(list)
     motivation_timelines = defaultdict(list)
 
     # Simulate the environment
-    num_steps = 365  # Representing one year
+    num_steps = 365  # one year
     for patient_index in range(env.total_patients):
         observation, _ = env.reset(seed=456, patient_index=patient_index)
         episode_rewards = []
         episode_glucose_levels = []
         episode_motivation_levels = []
         episode_weights = []
-        episode_stress_levels = []
         initial_motivation = env.state['motivation']
         for step in range(num_steps):
             action, _ = model.predict(observation, deterministic=False)  # Ensure exploration by using deterministic=False
@@ -80,7 +78,6 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
             episode_glucose_levels.append(env.state['glucose_level'])
             episode_motivation_levels.append(env.state['motivation'])
             episode_weights.append(env.state['weight'])
-            episode_stress_levels.append(env.state['stress_level'])
             action_summary[action] += 1
             patient_rewards[patient_index].append(reward)
             patient_actions[patient_index].append(action)
@@ -91,7 +88,6 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
                 round(env.state['glucose_level'], 2),
                 round(env.state['weight'], 1),
                 env.state['motivation'],
-                round(env.state['stress_level'], 2),
                 reward
             ])
             writer2.writerow([
@@ -103,7 +99,6 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
         glucose_levels.append(np.mean(episode_glucose_levels))
         motivation_levels.append(np.mean(episode_motivation_levels))
         weights.append(np.mean(episode_weights))
-        stress_levels.append(np.mean(episode_stress_levels))
         env.next_patient()  # Move to the next patient
 
         if patient_index % 10 == 0:
@@ -146,14 +141,14 @@ plt.title('Average Motivation Level per Episode Over Time')
 plt.savefig('average_motivation_level_per_episode.png')
 plt.close()
 
-# Plotting the average weight per episode
-plt.figure(figsize=(12, 8))
-plt.plot(weights)
-plt.xlabel('Episode')
-plt.ylabel('Average Weight')
-plt.title('Average Weight per Episode Over Time')
-plt.savefig('average_weight_per_episode.png')
-plt.close()
+# # Plotting the average weight per episode
+# plt.figure(figsize=(12, 8))
+# plt.plot(weights)
+# plt.xlabel('Episode')
+# plt.ylabel('Average Weight')
+# plt.title('Average Weight per Episode Over Time')
+# plt.savefig('average_weight_per_episode.png')
+# plt.close()
 
 # Plotting the action summary
 plt.figure(figsize=(12, 8))
