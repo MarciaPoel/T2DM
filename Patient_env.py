@@ -9,8 +9,7 @@ class PatientEnvironment(gym.Env):
     def __init__(self):
         super(PatientEnvironment, self).__init__()
 
-        self.observation_space = spaces.Box(low=np.array([18, 70, 0, 0]), high=np.array([90, 355, 5, 200]), dtype=np.float32)
-        # Reduced action space with fewer actions
+        self.observation_space = spaces.Box(low=np.array([18, 70, 0, 0]), high=np.array([90, 355, 5, 5]), dtype=np.float32)
         self.action_space = spaces.Discrete(9)  
 
         self.state = None
@@ -55,12 +54,12 @@ class PatientEnvironment(gym.Env):
             state['age'], 
             state['glucose_level'] + glucose_meter_noise, 
             state['physical_activity'],
-            state['weight']
+            state['motivation']
         ], dtype=np.float32)
         observation = np.clip(observation, self.observation_space.low, self.observation_space.high)
         return observation
 
-    def next_glucose(self, state, effect, action_performed):
+    def next_glucose(self, state, effect, follow_advice):
         base_fluctuations = random.uniform(-10, 10)  # Daily variations
         age_factor = 5 if state['age'] < 30 else (10 if 30 <= state['age'] < 65 else 7)
         weight_factor = 1.2 if state['weight'] > 100 else 1.0
@@ -72,7 +71,7 @@ class PatientEnvironment(gym.Env):
         if state['weight'] > 100:
             improvement_factor *= 0.8
 
-        if action_performed:
+        if follow_advice:
             return state['glucose_level'] + (base_fluctuations + age_factor) * weight_factor * stress_factor * improvement_factor + effect
         else:
             return state['glucose_level'] + 1.5 * ((base_fluctuations + age_factor) * weight_factor * stress_factor * improvement_factor + effect)
@@ -92,21 +91,21 @@ class PatientEnvironment(gym.Env):
 
     def next_state(self, coach_action):
         effect = 0
-        action_performed = False
+        follow_advice = False
 
-        # Check if the patient will perform the action based on their physical activity preference and motivation
+        # follow advice yes or no
         if coach_action in [1, 2, 3]:  # Physical activities
             if self.state['physical_activity'] <= 1 or self.state['motivation'] < 2:
-                action_performed = False
+                follow_advice = False
             else:
-                action_performed = True
+                follow_advice = True
         elif coach_action in [0, 4, 5, 6, 7, 8]:  # Other actions
-            if self.state['motivation'] < 2 and coach_action != 6:  # Motivation too low for non-motivational actions
-                action_performed = False
+            if self.state['motivation'] < 2 and coach_action != 6:
+                follow_advice = False
             else:
-                action_performed = True
+                follow_advice = True
 
-        # Apply age-based response modifiers
+        # Differences age
         age_factor = 1.0
         if self.state['age'] < 30:
             age_factor = 1.5
@@ -115,8 +114,8 @@ class PatientEnvironment(gym.Env):
         else:
             age_factor = 1.0
 
-        # Define realistic effects for each action
-        if action_performed:
+        # Effects per advice
+        if follow_advice:
             if coach_action == 0:  # manage_diet
                 self.actions_performed[coach_action] += 1
                 if self.actions_performed[coach_action] % 3 == 0:
@@ -154,9 +153,9 @@ class PatientEnvironment(gym.Env):
                 self.state['stress_level'] -= 0.1
                 self.state['motivation'] += 0.2
 
- #      print(f"Action: {coach_action}, Action Performed: {action_performed}, Effect: {effect}")
+ #      print(f"Action: {coach_action}, Action Performed: {follow_advice}, Effect: {effect}")
 
-        self.state['glucose_level'] = self.next_glucose(self.state, effect, action_performed)
+        self.state['glucose_level'] = self.next_glucose(self.state, effect, follow_advice)
 
         self.state['glucose_level'] = max(0, self.state['glucose_level'])
         self.state['motivation'] = max(0, min(self.state['motivation'], 5))
@@ -171,43 +170,44 @@ class PatientEnvironment(gym.Env):
         glucose_critical_low = state['glucose_level'] < 70
         glucose_critical_high = state['glucose_level'] > 300
 
-        # Reward for maintaining glucose levels in the target range
+        # glucose
         if glucose_in_range:
             reward += 2
         else:
-            reward -= 2  # Penalize for glucose levels outside the target range
+            reward -= 2
 
-        # Additional penalties for critical glucose levels
         if glucose_critical_low or glucose_critical_high:
             reward -= 5
 
-        # Reward for high motivation
+        # motivation
         if state['motivation'] > 4:
             reward += 1
         elif state['motivation'] < 2:
-            reward -= 1  # Penalize for low motivation
+            reward -= 1  
 
-        # Specific reward logic for motivational action
+        # 
         if state['motivation'] > 1 and coach_action == 6:
             reward -= 10
+        elif state['motivation'] < 0 and coach_action == 6:
+            reward += 10
 
-        # Reward for maintaining a healthy weight
+        # weight
         if 70 <= state['weight'] <= 100:
             reward += 1
         elif state['weight'] < 50 or state['weight'] > 120:
-            reward -= 1  # Penalize for unhealthy weight
+            reward -= 1
 
-        # Reward for low stress levels
+        # stress
         if state['stress_level'] < 0.3:
             reward += 1
         elif state['stress_level'] > 0.7:
             reward -= 1
 
-        # Reward adherence to good habits (motivation and glucose control)
+        # good health
         if state['motivation'] >= 4 and glucose_in_range:
             reward += 1
 
-        # Refine reward based on sustained actions and their impact
+        # extra
         sustained_action_bonus = 0
         for action, count in self.actions_performed.items():
             if count > 0 and count % 3 == 0:
@@ -219,7 +219,7 @@ class PatientEnvironment(gym.Env):
 
     def step(self, coach_action):
         self.next_state(coach_action)
-        reward = self.get_reward(self.state, coach_action)  # Pass coach_action to get_reward
+        reward = self.get_reward(self.state, coach_action)
         observation = self.get_observation(self.state)
         terminated = False
         truncated = False
