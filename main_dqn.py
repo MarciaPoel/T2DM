@@ -1,4 +1,4 @@
-from stable_baselines3 import PPO
+from stable_baselines3 import DQN
 from stable_baselines3.common.env_checker import check_env
 from Patient_env import PatientEnvironment
 import csv
@@ -18,19 +18,19 @@ env = PatientEnvironment()
 check_env(env, warn=True)
 
 # Adjust total timesteps for training
-total_timesteps = 500000
+total_timesteps = 365000
 
 # Create the PPO model with adjusted parameters for more exploration
-model = PPO("MlpPolicy", env, verbose=1, n_steps=2048, batch_size=64, n_epochs=10, gamma=0.99, learning_rate=3e-4, ent_coef = 0.01)
+model = DQN("MlpPolicy", env, verbose =1)
 
 # Train the agent
 model.learn(total_timesteps=total_timesteps)
 
 # Save the model
-model.save("ppo_patient")
+model.save("dqn_patient")
 
 # Load the trained model
-model = PPO.load("ppo_patient")
+model = DQN.load("dqn_patient")
 
 # Initialize CSV files
 with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisions_log.csv', mode='w', newline='') as file2:
