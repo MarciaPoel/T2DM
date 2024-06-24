@@ -1,35 +1,40 @@
-from Patient_data import generate_random_patient, set_seed
 import pandas as pd
-import os
+import numpy as np
+import random
 
-def get_patients(number_patients, seed=456):
-    print(f"Getting {number_patients} patients with seed: {seed}")
-    set_seed(seed)
-    return [generate_random_patient() for _ in range(number_patients)]
+def generate_patient(age_group, base_values, noise_level=0.05):
+    patient = {
+        'age': np.random.randint(age_group[0], age_group[1] + 1),
+        'years_T2DM': max(0, int(10 * (1 + np.random.uniform(-noise_level, noise_level)))),
+        'physical_activity': max(0, min(5, int(np.random.uniform(0, 5) * (1 + np.random.uniform(-noise_level, noise_level))))),
+        'glucose_level': round(max(100, min(355, 150 * (1 + np.random.uniform(-noise_level, noise_level)))), 2),
+        'weight': round(max(100, int(110 * (1 + np.random.uniform(-noise_level, noise_level)))), 2),
+        'motivation': round(max(0, min(4, np.random.uniform(0, 4) * (1 + np.random.uniform(-noise_level, noise_level)))), 2),
+        'stress_level': round(max(0, min(1, 0.5 * (1 + np.random.uniform(-noise_level, noise_level)))), 2)
+    }
+    return patient
 
-number_patients = 50
+def create_dataset(seed=234):
+    np.random.seed(seed)
+    random.seed(seed)
 
-if not os.path.exists('patients_data_50.csv'):
-    patients = get_patients(number_patients)
-
-    # Convert patient data to DataFrame
-    patient_data = {
-        "age": [patient.age for patient in patients],
-        "years_T2DM": [patient.years_T2DM for patient in patients],
-        "physical_activity": [patient.physical_activity for patient in patients],
-        "glucose_level": [patient.glucose_level for patient in patients],
-        "weight": [patient.weight for patient in patients],
-        "motivation": [patient.motivation for patient in patients],
-        "stress_level": [patient.stress_level for patient in patients]
+    age_groups = [(18, 30), (31, 50), (51, 70), (71, 90)]
+    base_values = {
+        'years_T2DM': 10,
+        'physical_activity': 3,
+        'glucose_level': 150,
+        'weight': 110,
+        'motivation': 2,
+        'stress_level': 0.5
     }
 
-    df = pd.DataFrame(patient_data)
+    patients = []
+    for age_group in age_groups:
+        for _ in range(15):
+            patients.append(generate_patient(age_group, base_values))
 
-    # Save DataFrame to CSV
-    df.to_csv("patients_data_50.csv", index=False)
+    patient_df = pd.DataFrame(patients)
+    patient_df.to_csv("patients_data_grouped.csv", index=False)
 
-    print("Patient data saved to patients_data_50.csv")
-else:
-    print("Dataset already exists.")
-    df = pd.read_csv("patients_data_50.csv")
-    print(df)
+if __name__ == "__main__":
+    create_dataset()

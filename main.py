@@ -3,43 +3,30 @@ from stable_baselines3.common.env_checker import check_env
 from Patient_env import PatientEnvironment
 import csv
 import numpy as np
-from Patient_data import generate_random_patient, Patient, set_seed
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import defaultdict
-
-# Ensure dataset exists
 import create_dataset
 
-# Create the environment
 env = PatientEnvironment()
-
-# Check if the environment follows the gymnasium interface
 check_env(env, warn=True)
 
-# Adjust total timesteps for training
 total_timesteps = 500000
 
-# Create the PPO model with adjusted parameters for more exploration
+
 model = PPO("MlpPolicy", env, verbose=1, n_steps=2048, batch_size=64, n_epochs=10, gamma=0.99, learning_rate=3e-4, ent_coef = 0.04)
-
-# Train the agent
 model.learn(total_timesteps=total_timesteps)
-
-# Save the model
 model.save("ppo_patient")
-
-# Load the trained model
 model = PPO.load("ppo_patient")
 
-# Initialize CSV files
+# create the CSV files
 with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisions_log.csv', mode='w', newline='') as file2:
     writer1 = csv.writer(file1)
     writer2 = csv.writer(file2)
 
     writer1.writerow([
-        'Patient', 'Step', 'Action', 'Age', 'Years_T2DM', 'Physical_Activity',
-        'Glucose_Level', 'Weight', 'Motivation', 'Stress_Level', 'Reward'
+        'Patient', 'Step', 'Action', 'Performed', 'Age', 'Years_T2DM', 'Physical_Activity',
+        'Motivation', 'Glucose_Level', 'Weight', 'Stress_Level', 'Reward'
     ])
 
     writer2.writerow([
@@ -49,25 +36,21 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
     all_rewards = []
     glucose_levels = []
     motivation_levels = []
-    weights = []
     stress_levels = []
     action_summary = {action: 0 for action in range(env.action_space.n)}
     patient_rewards = defaultdict(list)
     patient_actions = defaultdict(list)
-    motivation_timelines = defaultdict(list)
+    patient_glucose_levels = defaultdict(list)
+    patient_stress_levels = defaultdict(list)
+    patient_motivation_levels = defaultdict(list)
 
-    # Simulate the environment
-    num_steps = 365  # Representing one year
+    # Simulation
+    num_steps = 365  # one year
     for patient_index in range(env.total_patients):
-        observation, _ = env.reset(seed=456, patient_index=patient_index)
+        observation, _ = env.reset(seed=None, patient_index=patient_index)
         episode_rewards = []
-        episode_glucose_levels = []
-        episode_motivation_levels = []
-        episode_weights = []
-        episode_stress_levels = []
-        initial_motivation = env.state['motivation']
         for step in range(num_steps):
-            action, _ = model.predict(observation, deterministic=False)  # Ensure exploration by using deterministic=False
+            action, _ = model.predict(observation, deterministic=False)
             
             # Ensure action is hashable
             if isinstance(action, np.ndarray) and action.ndim == 0:
@@ -76,21 +59,20 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
                 action = tuple(action)  # Convert array to tuple for hashability
             
             observation, reward, terminated, truncated, info = env.step(action)
+            action_performed = info['action_performed']
             episode_rewards.append(reward)
-            episode_glucose_levels.append(env.state['glucose_level'])
-            episode_motivation_levels.append(env.state['motivation'])
-            episode_weights.append(env.state['weight'])
-            episode_stress_levels.append(env.state['stress_level'])
+            patient_glucose_levels[patient_index].append(env.state['glucose_level'])
+            patient_motivation_levels[patient_index].append(env.state['motivation'])
+            patient_stress_levels[patient_index].append(env.state['stress_level'])
             action_summary[action] += 1
             patient_rewards[patient_index].append(reward)
             patient_actions[patient_index].append(action)
-            motivation_timelines[initial_motivation].append((step, env.state['motivation']))
             writer1.writerow([
-                patient_index + 1, step + 1, action,
+                patient_index + 1, step + 1, action, action_performed,
                 env.state['age'], env.state['years_T2DM'], env.state['physical_activity'],
+                env.state['motivation'],
                 round(env.state['glucose_level'], 2),
                 round(env.state['weight'], 1),
-                env.state['motivation'],
                 round(env.state['stress_level'], 2),
                 reward
             ])
@@ -100,11 +82,7 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
             if terminated or truncated:
                 break
         all_rewards.append(np.mean(episode_rewards))
-        glucose_levels.append(np.mean(episode_glucose_levels))
-        motivation_levels.append(np.mean(episode_motivation_levels))
-        weights.append(np.mean(episode_weights))
-        stress_levels.append(np.mean(episode_stress_levels))
-        env.next_patient()  # Move to the next patient
+        env.next_patient()
 
         if patient_index % 10 == 0:
                 print(f"Processed patient {patient_index + 1}/{env.total_patients}")
@@ -119,7 +97,7 @@ with open('action_summary.csv', mode='w', newline='') as file:
     for action, count in action_summary.items():
         writer.writerow([action, count])
 
-# Plotting the average reward per episode
+# Average episode
 plt.figure(figsize=(12, 8))
 plt.plot(all_rewards)
 plt.xlabel('Episode')
@@ -128,32 +106,46 @@ plt.title('Average Reward per Episode Over Time')
 plt.savefig('average_reward_per_episode.png')
 plt.close()
 
-# Plotting the average glucose level per episode
-plt.figure(figsize=(12, 8))
-plt.plot(glucose_levels)
-plt.xlabel('Episode')
-plt.ylabel('Average Glucose Level')
-plt.title('Average Glucose Level per Episode Over Time')
-plt.savefig('average_glucose_level_per_episode.png')
-plt.close()
+# Function to plot average metric over time for different groups
+def plot_average_metric_by_group(patients, metric_data, metric_name, group_name):
+    max_length = max(len(metric_data[patient]) for patient in patients)
+    padded_metric_data = [
+        np.pad(metric_data[patient], (0, max_length - len(metric_data[patient])), 'constant', constant_values=np.nan)
+        for patient in patients
+    ]
+    avg_metric = np.nanmean(padded_metric_data, axis=0)
+    plt.figure(figsize=(12, 8))
+    plt.plot(avg_metric, label=f'Average {metric_name} ({group_name})')
+    plt.xlabel('Step')
+    plt.ylabel(f'Average {metric_name}')
+    plt.title(f'Average {metric_name} Over Time for {group_name} Patients')
+    plt.legend()
+    plt.savefig(f'average_{metric_name.lower()}_{group_name.lower()}.png')
+    plt.close()
 
-# Plotting the average motivation level per episode
-plt.figure(figsize=(12, 8))
-plt.plot(motivation_levels)
-plt.xlabel('Episode')
-plt.ylabel('Average Motivation Level')
-plt.title('Average Motivation Level per Episode Over Time')
-plt.savefig('average_motivation_level_per_episode.png')
-plt.close()
 
-# Plotting the average weight per episode
-plt.figure(figsize=(12, 8))
-plt.plot(weights)
-plt.xlabel('Episode')
-plt.ylabel('Average Weight')
-plt.title('Average Weight per Episode Over Time')
-plt.savefig('average_weight_per_episode.png')
-plt.close()
+# def plot_metric_for_patient_group(patient_group, metric_data, metric_name, group_name):
+#     plt.figure(figsize=(12, 8))
+#     for patient_index in patient_group:
+#         plt.plot(metric_data[patient_index], label=f'Patient {patient_index}')
+#     plt.xlabel('Step')
+#     plt.ylabel(metric_name)
+#     plt.title(f'{metric_name} Over Time for {group_name}')
+#     plt.legend()
+#     plt.savefig(f'{metric_name.lower()}_{group_name.lower()}.png')
+#     plt.close()
+
+age_groups = {
+    "18-30": [i for i in range(15)],
+    "31-50": [i for i in range(15, 30)],
+    "51-70": [i for i in range(30, 45)],
+    "71-90": [i for i in range(45, 50)]
+}
+
+for group_name, patients in age_groups.items():
+    plot_average_metric_by_group(patients, patient_glucose_levels, 'Glucose Level', group_name)
+    plot_average_metric_by_group(patients, patient_motivation_levels, 'Motivation', group_name)
+    plot_average_metric_by_group(patients, patient_stress_levels, 'Stress Level', group_name)
 
 # Plotting the action summary
 plt.figure(figsize=(12, 8))
@@ -166,80 +158,13 @@ plt.title('Action Summary')
 plt.savefig('action_summary.png')
 plt.close()
 
-# Analyzing action diversity for each patient
-action_diversity = {patient: len(set(actions)) for patient, actions in patient_actions.items()}
-
-# Plotting action diversity per patient
-palet = sns.color_palette("hsv", len(action_diversity))
-
-plt.figure(figsize=(12, 8))
-for idx, (patient_index, diversity) in enumerate(action_diversity.items()):
-    plt.bar(patient_index, diversity, color=palet[idx], label=f'Patient {patient_index}', alpha=0.7)
-plt.xlabel('Patient Index')
-plt.ylabel('Action Diversity (Number of Unique Actions)')
-plt.title('Action Diversity per Patient')
-plt.legend(loc='upper right', bbox_to_anchor=(1.15, 1))
-plt.savefig('action_diversity_per_patient.png')
-plt.close()
-
-# Analyzing and plotting actions for different patient clusters
-patient_clusters = {'Young': [], 'Middle-aged': [], 'Old': []}
-for patient_index in range(env.total_patients):
-    patient_age = env.patient_data.iloc[patient_index]['age']
-    if patient_age < 30:
-        patient_clusters['Young'].extend(patient_actions[patient_index])
-    elif 30 <= patient_age < 60:
-        patient_clusters['Middle-aged'].extend(patient_actions[patient_index])
-    else:
-        patient_clusters['Old'].extend(patient_actions[patient_index])
-
-plt.figure(figsize=(12, 8))
-for cluster, actions in patient_clusters.items():
-    action_counts = {action: actions.count(action) for action in set(actions)}
-    plt.bar(action_counts.keys(), action_counts.values(), alpha=0.5, label=cluster)
-
-plt.xlabel('Action')
-plt.ylabel('Count')
-plt.title('Action Distribution by Patient Age Cluster')
-plt.legend()
-plt.savefig('action_distribution_by_age_cluster.png')
-plt.close()
-
-#learning curve
-plt.figure(figsize=(12, 8))
-for patient_index, rewards in patient_rewards.items():
-    plt.plot(rewards, label=f'Patient {patient_index}')
-plt.xlabel('Step')
-plt.ylabel('Reward')
-plt.title('Learning Curve of the Agent per Patient')
-plt.legend()
-plt.savefig('learning_curve_per_patient.png')
-plt.close()
-
-# Plotting the chosen action per patient
-palette = sns.color_palette("hsv", len(patient_actions))
-
-plt.figure(figsize=(12, 8))
-for idx, (patient_index, actions) in enumerate(patient_actions.items()):
-    action_counts = {action: actions.count(action) for action in set(actions)}
-    actions_sorted = sorted(action_counts.keys())
-    counts_sorted = [action_counts[action] for action in actions_sorted]
-    plt.bar(actions_sorted, counts_sorted, label=f'Patient {patient_index}', alpha=0.5, color=palette[idx])
-plt.xlabel('Action')
-plt.ylabel('Count')
-plt.title('Chosen Action per Patient')
-plt.legend(loc='upper right', bbox_to_anchor=(1.15, 1))
-plt.savefig('chosen_action_per_patient.png')
-plt.close()
-
-# Plotting the motivation timeline clustered by their starting value
-plt.figure(figsize=(12, 8))
-for initial_motivation, timeline in motivation_timelines.items():
-    steps, motivations = zip(*timeline)
-    plt.plot(steps, motivations, label=f'Initial Motivation {initial_motivation}')
-plt.xlabel('Step')
-plt.ylabel('Motivation')
-plt.title('Motivation Timeline Clustered by Initial Value')
-plt.legend()
-plt.savefig('motivation_timeline_clustered.png')
-plt.close()
+# #learning curve per patient
+# plt.figure(figsize=(12, 8))
+# for patient_index, rewards in patient_rewards.items():
+#     plt.plot(rewards, label=f'Patient {patient_index}')
+# plt.xlabel('Step')
+# plt.ylabel('Reward')
+# plt.title('Learning Curve of the Agent per Patient')
+# plt.legend()
+# plt.savefig('learning_curve_per_patient.png')
+# plt.close()
