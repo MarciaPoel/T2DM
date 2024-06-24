@@ -18,10 +18,10 @@ model = DQN(
     "MlpPolicy", 
     env, 
     verbose=1,
-    learning_rate=1e-3,            # Adjust learning rate if necessary
-    exploration_initial_eps=1.0,   # Initial exploration rate (high for more exploration)
-    exploration_final_eps=0.1,     # Final exploration rate (not too low to maintain exploration)
-    exploration_fraction=0.2       # Fraction of total training time over which exploration rate decays
+    learning_rate=1e-3,            
+    exploration_initial_eps=1.0,
+    exploration_final_eps=0.1,   
+    exploration_fraction=0.2       
 )
 
 model.learn(total_timesteps=total_timesteps)
