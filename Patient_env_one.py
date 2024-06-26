@@ -8,7 +8,7 @@ class PatientEnvironment(gym.Env):
     def __init__(self, data_file="single_patient_middle.csv", log_file="simulation_log.csv"):
         super(PatientEnvironment, self).__init__()
 
-        self.observation_space = spaces.Box(low=np.array([18, 0, 0, 100, 80, 0]), high=np.array([90, 5, 4, 355, 200, 1]), dtype=np.float32)
+        self.observation_space = spaces.Box(low=np.array([18, 0, 100, 80, 0]), high=np.array([90, 5, 355, 200, 1]), dtype=np.float32)
         self.action_space = spaces.Discrete(8)  
         self.state = None
         self.patient_index = 0
@@ -47,7 +47,7 @@ class PatientEnvironment(gym.Env):
         observation = np.array([
             state['age'], 
             state['physical_activity'],
-            state['motivation'],
+            #state['motivation'],
             state['glucose_level'] + glucose_meter_noise, 
             state['weight'],
             state['stress_level']
@@ -56,8 +56,8 @@ class PatientEnvironment(gym.Env):
         return observation
 
     def next_glucose(self, state, effect, action_performed):
-        base_fluctuations = random.uniform(-10, 10)  # Daily variations
-        age_factor = 5 if state['age'] < 30 else (10 if 30 <= state['age'] < 65 else 7)
+        base_fluctuations = random.uniform(-5, 5)  # Daily variations
+        age_factor = 2 if state['age'] < 30 else (5 if 30 <= state['age'] < 65 else 3)
         weight_factor = 1.2 if state['weight'] > 100 else 1.0
 
         improvement_factor = 1.0
@@ -69,7 +69,7 @@ class PatientEnvironment(gym.Env):
         if action_performed:
             return state['glucose_level'] + (base_fluctuations + age_factor) * weight_factor * improvement_factor + effect
         else:
-            return state['glucose_level'] + 1.5 * ((base_fluctuations + age_factor) * weight_factor * improvement_factor + effect)
+            return state['glucose_level'] + 1.2 * ((base_fluctuations + age_factor) * weight_factor * improvement_factor + effect)
 
     def next_state(self, coach_action):
         effect = 0
@@ -115,29 +115,29 @@ class PatientEnvironment(gym.Env):
                 self.actions_performed[coach_action] += 1
                 if self.advice_in_row == 5:
                     self.state['weight'] -= 0.1
-                effect = -5 * age_factor
+                effect = -2 * age_factor
             elif coach_action == 1:  # short walk
                 self.actions_performed[coach_action] += 1
                 if self.advice_in_row == 5:
                     self.state['weight'] -= 0.1
-                effect = -5 * age_factor
+                effect = -2 * age_factor
             elif coach_action == 2:  # long walk
                 self.actions_performed[coach_action] += 1
                 if self.advice_in_row == 5:
                     self.state['weight'] -= 0.2
-                effect = -7 * age_factor
+                effect = -4 * age_factor
             elif coach_action == 3:  # gym time
                 self.actions_performed[coach_action] += 1
                 if self.advice_in_row == 5:
                     self.state['weight'] -= 0.4
-                effect = -10 * age_factor
+                effect = -5 * age_factor
             elif coach_action == 4:  # medication
                 self.actions_performed[coach_action] += 1
                 if self.advice_in_row == 2:
                     self.state['motivation'] -= 0.1
-                effect = -12 * age_factor
+                effect = -6 * age_factor
             elif coach_action == 5:  # reduce sugar
-                effect = -5 * age_factor
+                effect = -2 * age_factor
             elif coach_action == 6:  # motivational message
                 effect = 0 
                 self.state['motivation'] += 0.1
@@ -172,15 +172,15 @@ class PatientEnvironment(gym.Env):
             else:
                 reward -= 1
             
-            if state['motivation'] > 2:
-                reward += 0.2
-            else:
-                reward -= 0.2
+            # if state['motivation'] > 2:
+            #     reward += 0.2
+            # else:
+            #     reward -= 0.2
         
-            if state['motivation'] > 2 and coach_action == 6:
-                reward -= 1
-            elif state['motivation'] < 2 and coach_action == 6:
-                reward += 1
+            # if state['motivation'] > 2 and coach_action == 6:
+            #     reward -= 1
+            # elif state['motivation'] < 2 and coach_action == 6:
+            #     reward += 1
             
             if state['stress_level'] > 0.7 and coach_action == 7:
                 reward += 0.5
@@ -208,23 +208,3 @@ class PatientEnvironment(gym.Env):
 
         info = {'action_performed': self.action_performed}
         return observation, reward, terminated, truncated, info
-
-    def log_step(self, action, effect, action_performed):
-        log_entry = {
-            'patient_index': self.patient_index,
-            'age': self.state['age'],
-            'years_T2DM': self.state['years_T2DM'],
-            'physical_activity': self.state['physical_activity'],
-            'motivation': self.state['motivation'],
-            'glucose_level': self.state['glucose_level'],
-            'weight': self.state['weight'],
-            'stress_level': self.state['stress_level'],
-            'action': action,
-            'effect': effect,
-            'action_performed': action_performed
-        }
-        self.logs.append(log_entry)
-
-    def save_logs(self):
-        log_df = pd.DataFrame(self.logs)
-        log_df.to_csv(self.log_file, index=False)

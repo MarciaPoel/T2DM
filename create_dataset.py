@@ -14,7 +14,7 @@ def generate_patient(age_group, base_values, noise_level=0.05):
     }
     return patient
 
-def create_dataset(seed=234):
+def create_dataset(seed=421):
     np.random.seed(seed)
     random.seed(seed)
 
@@ -30,11 +30,11 @@ def create_dataset(seed=234):
 
     patients = []
     for age_group in age_groups:
-        for _ in range(15):
+        for _ in range(1):
             patients.append(generate_patient(age_group, base_values))
 
     patient_df = pd.DataFrame(patients)
-    patient_df.to_csv("patients_data_grouped.csv", index=False)
+    patient_df.to_csv("patients_data_grouped_one.csv", index=False)
 
 if __name__ == "__main__":
     create_dataset()

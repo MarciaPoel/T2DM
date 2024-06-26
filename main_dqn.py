@@ -10,14 +10,17 @@ env = PatientEnvironment()
 check_env(env, warn=True)
 
 total_timesteps = 1000000
-model = DQN("MlpPolicy", env, verbose=1)
+model = DQN("MlpPolicy", env, verbose=1, exploration_initial_eps=1.0,
+    exploration_final_eps=0.1,
+    exploration_fraction=0.5 
+)
 
 model.learn(total_timesteps=total_timesteps)
 model.save("dqn_patient")
 model = DQN.load("dqn_patient")
 
 # Initialize CSV files
-with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisions_log.csv', mode='w', newline='') as file2:
+with open('patient_simulation_no_motiv.csv', mode='w', newline='') as file1, open('decisions_log_no_motiv.csv', mode='w', newline='') as file2:
     writer1 = csv.writer(file1)
     writer2 = csv.writer(file2)
 
@@ -31,6 +34,7 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
     ])
 
     all_rewards = []
+    step_rewards = []
     glucose_levels = []
     motivation_levels = []
     stress_levels = []
@@ -57,6 +61,7 @@ with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisi
         observation, reward, terminated, truncated, info = env.step(action)
         action_performed = info['action_performed']
         episode_rewards.append(reward)
+        step_rewards.append(reward)
         glucose_levels.append(env.state['glucose_level'])
         motivation_levels.append(env.state['motivation'])
         stress_levels.append(env.state['stress_level'])
@@ -100,11 +105,20 @@ plt.title('Average Reward per Episode Over Time')
 plt.savefig('average_reward_per_episode.png')
 plt.close()
 
+# Plotting the average reward per step
+plt.figure(figsize=(12, 8))
+plt.plot(step_rewards)
+plt.xlabel('Step')
+plt.ylabel('Average Reward')
+plt.title('Average Reward per step Over Time')
+plt.savefig('average_reward_per_step.png')
+plt.close()
+
 # Function to plot average metric over time
 def plot_average_metric(metric_data, metric_name):
     plt.figure(figsize=(12, 8))
     plt.plot(metric_data)
-    plt.xlabel('Step')
+    plt.xlabel('Episode')
     plt.ylabel(f'Average {metric_name}')
     plt.title(f'Average {metric_name} Over Time')
     plt.savefig(f'average_{metric_name.lower()}.png')
