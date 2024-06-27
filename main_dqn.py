@@ -1,5 +1,7 @@
 from stable_baselines3 import DQN
 from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.evaluation import evaluate_policy
 from Patient_env_one import PatientEnvironment
 import csv
 import numpy as np
@@ -8,25 +10,31 @@ from collections import defaultdict
 
 env = PatientEnvironment()
 check_env(env, warn=True)
+env = Monitor(env, filename='monitor_log.csv')
 
-total_timesteps = 1000000
-model = DQN("MlpPolicy", env, verbose=1, exploration_initial_eps=1.0,
-    exploration_final_eps=0.1,
-    exploration_fraction=0.5 
+total_timesteps = 500000
+model = DQN("MlpPolicy", env, verbose=1,
+    exploration_final_eps=0.01,
+    exploration_fraction=0.1 ,
+    exploration_initial_eps=1.0
 )
 
 model.learn(total_timesteps=total_timesteps)
+
+mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10)
+print(f"Mean reward: {mean_reward} +/- {std_reward}")
+
 model.save("dqn_patient")
 model = DQN.load("dqn_patient")
 
 # Initialize CSV files
-with open('patient_simulation_no_motiv.csv', mode='w', newline='') as file1, open('decisions_log_no_motiv.csv', mode='w', newline='') as file2:
+with open('patient_simulation.csv', mode='w', newline='') as file1, open('decisions_log_no_motiv.csv', mode='w', newline='') as file2:
     writer1 = csv.writer(file1)
     writer2 = csv.writer(file2)
 
     writer1.writerow([
         'Patient', 'Step', 'Action', 'Performed', 'Age', 'Years_T2DM', 'Physical_Activity',
-        'Motivation', 'Glucose_Level', 'Weight', 'Stress_Level', 'Reward'
+        'Motivation', 'Glucose_Level', 'Reward'
     ])
 
     writer2.writerow([
@@ -37,12 +45,10 @@ with open('patient_simulation_no_motiv.csv', mode='w', newline='') as file1, ope
     step_rewards = []
     glucose_levels = []
     motivation_levels = []
-    stress_levels = []
     action_summary = {action: 0 for action in range(env.action_space.n)}
     patient_rewards = defaultdict(list)
     patient_actions = defaultdict(list)
     patient_glucose_levels = defaultdict(list)
-    patient_stress_levels = defaultdict(list)
     patient_motivation_levels = defaultdict(list)
 
     # Simulate the environment
@@ -64,26 +70,25 @@ with open('patient_simulation_no_motiv.csv', mode='w', newline='') as file1, ope
         step_rewards.append(reward)
         glucose_levels.append(env.state['glucose_level'])
         motivation_levels.append(env.state['motivation'])
-        stress_levels.append(env.state['stress_level'])
         action_summary[action] += 1
         patient_rewards[0].append(reward)
         patient_actions[0].append(action)
         patient_glucose_levels[0].append(env.state['glucose_level'])
         patient_motivation_levels[0].append(env.state['motivation'])
-        patient_stress_levels[0].append(env.state['stress_level'])
         writer1.writerow([
             1, step + 1, action, action_performed,
             env.state['age'], env.state['years_T2DM'], env.state['physical_activity'],
             env.state['motivation'],
             round(env.state['glucose_level'], 2),
-            round(env.state['weight'], 1),
-            round(env.state['stress_level'], 2),
             reward
         ])
         writer2.writerow([
             1, step + 1, action, observation.tolist(), reward
         ])
         if terminated or truncated:
+            observation, _ = env.reset(seed=123)
+            all_rewards.append(np.mean(episode_rewards))
+            episode_rewards = []
             break
     all_rewards.append(np.mean(episode_rewards))
 
@@ -127,7 +132,6 @@ def plot_average_metric(metric_data, metric_name):
 # Plotting metrics
 plot_average_metric(glucose_levels, 'Glucose Level')
 plot_average_metric(motivation_levels, 'Motivation')
-plot_average_metric(stress_levels, 'Stress Level')
 
 # Plotting the action summary
 plt.figure(figsize=(12, 8))

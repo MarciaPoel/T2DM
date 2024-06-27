@@ -9,11 +9,11 @@ class PatientEnvironment(gym.Env):
         super(PatientEnvironment, self).__init__()
 
         self.observation_space = spaces.Box(
-            low=np.array([18, 0, 0, 100, 80, 0]), 
-            high=np.array([90, 5, 4, 355, 200, 1]), 
+            low=np.array([18, 0, 0, 100, 80]), 
+            high=np.array([90, 5, 4, 355, 200]), 
             dtype=np.float32
         )
-        self.action_space = spaces.Discrete(8)
+        self.action_space = spaces.Discrete(7)
 
         self.patient_data = pd.read_csv(data_file)
         self.total_patients = len(self.patient_data)
@@ -23,13 +23,24 @@ class PatientEnvironment(gym.Env):
         self.actions_in_row = {i: None for i in range(self.total_patients)}
         self.count_in_row = {i: 0 for i in range(self.total_patients)}
 
-    def reset(self, seed=None):
+    # def reset(self, seed=None):
+    #     if seed is not None:
+    #         np.random.seed(seed)
+    #         random.seed(seed)
+    #     self.current_patient_index = 0
+    #     self.current_step = 0
+    #     self.patient_states = [self._get_patient_state(i) for i in range(self.total_patients)]
+    #     self.actions_in_row = {i: None for i in range(self.total_patients)}
+    #     self.count_in_row = {i: 0 for i in range(self.total_patients)}
+    #     observation = self.get_observation(self.patient_states[self.current_patient_index])
+    #     return observation, {}
+
+    def reset(self, seed=None, patient_index=None):
         if seed is not None:
             np.random.seed(seed)
             random.seed(seed)
-        self.current_patient_index = 0
+        self.current_patient_index = patient_index if patient_index is not None else random.randint(0, self.total_patients - 1)
         self.current_step = 0
-        self.patient_states = [self._get_patient_state(i) for i in range(self.total_patients)]
         self.actions_in_row = {i: None for i in range(self.total_patients)}
         self.count_in_row = {i: 0 for i in range(self.total_patients)}
         observation = self.get_observation(self.patient_states[self.current_patient_index])
@@ -44,7 +55,6 @@ class PatientEnvironment(gym.Env):
             'motivation': patient.motivation,
             'glucose_level': patient.glucose_level,
             'weight': patient.weight,
-            'stress_level': patient.stress_level
         }
 
     def get_observation(self, state):
@@ -55,7 +65,6 @@ class PatientEnvironment(gym.Env):
             state['motivation'],
             state['glucose_level'] + glucose_meter_noise, 
             state['weight'],
-            state['stress_level']
         ], dtype=np.float32)
         observation = np.clip(observation, self.observation_space.low, self.observation_space.high)
         return observation
@@ -63,36 +72,39 @@ class PatientEnvironment(gym.Env):
     def next_glucose(self, state, effect, action_performed):
         base_fluctuations = random.uniform(-5, 5) 
         age_factor = 5 if state['age'] < 30 else (10 if 30 <= state['age'] < 65 else 7)
-        weight_factor = 1.2 if state['weight'] > 100 else 1.0
         improvement_factor = 1.0
 
         if state['age'] > 65:
             improvement_factor *= 0.7
-        if state['weight'] > 100:
-            improvement_factor *= 0.8
 
         if action_performed:
-            return state['glucose_level'] + (base_fluctuations + age_factor) * weight_factor * improvement_factor + effect
+            return state['glucose_level'] + (base_fluctuations + age_factor) * improvement_factor + effect
         else:
-            return state['glucose_level'] + 1.2 * ((base_fluctuations + age_factor) * weight_factor * improvement_factor + effect)
+            return state['glucose_level'] + 1.2 * ((base_fluctuations + age_factor) * improvement_factor + effect)
 
     def next_state(self, state, coach_action, patient_id):
         effect = 0
         action_performed = False
 
-        if coach_action in [1, 2, 3]:  # Physical activities
+           # follow advice yes or no
+        if coach_action in [1, 2]:  # Physical activities
             if state['physical_activity'] <= 2 or state['motivation'] < 2:
                 action_performed = False
-            else:
-                action_performed = True
-        elif coach_action in [0, 4, 5, 7]:  # Other actions
-            if state['motivation'] < 2:
+            elif state['age'] > 70 and coach_action == 2:
                 action_performed = False
             else:
                 action_performed = True
-        elif coach_action == 6:
+        elif coach_action in [0, 4]:  # Other actions
+            if state['motivation'] < 2:
+                action_performed = False
+            elif state['physical_activity'] > 2:
+                action_performed = False
+            else:
+                action_performed = True
+        elif coach_action == 5:
             if state['motivation'] < 2:
                 action_performed = True
+
 
         age_factor = 1.0
         if state['age'] < 30:
@@ -108,38 +120,34 @@ class PatientEnvironment(gym.Env):
                 self.count_in_row[patient_id] = 1
                 self.actions_in_row[patient_id] = coach_action
 
-            if coach_action == 0: #diet
+            if coach_action == 0: #balance meals
                 if self.count_in_row[patient_id] >= 5:
                     state['motivation'] = min(state['motivation'] + 0.1, 4)
                 effect = -2 * age_factor
             elif coach_action == 1: #short walk
                 if self.count_in_row[patient_id] >= 5:
                     state['motivation'] = min(state['motivation'] + 0.1, 4)
-                effect = -2 * age_factor
+                effect = -3 * age_factor
             elif coach_action == 2: #long walk
                 if self.count_in_row[patient_id] >= 5:
                     state['motivation'] = min(state['motivation'] + 0.1, 4)
                 effect = -4 * age_factor
-            elif coach_action == 3: #gym_time
+            elif coach_action == 3: #medication
                 if self.count_in_row[patient_id] >= 5:
-                    state['motivation'] = min(state['motivation'] + 0.1, 4)
+                    state['motivation'] = min(state['motivation'] - 0.1, 4)
                 effect = -5 * age_factor
-            elif coach_action == 4: #medication
-                if self.count_in_row[patient_id] >= 5:
-                    state['motivation'] = max(state['motivation'] - 0.1, 4)
-                effect = -6 * age_factor
-            elif coach_action == 5: #less sugar
+            elif coach_action == 4: #reduce sugar
                 effect = -2 * age_factor
-            elif coach_action == 6: #motivational
+            elif coach_action == 5: #motivational
                 effect = 0 
                 state['motivation'] += 0.1
-            elif coach_action == 7: #relieve stress
-                state['stress_level'] -= 0.1
+            elif coach_action == 6: #keep it up
+                effect = 0
 
         state['glucose_level'] = max(100, self.next_glucose(state, effect, action_performed))
         state['motivation'] = max(0, min(state['motivation'], 4))
         state['weight'] = max(80, state['weight'])
-        state['stress_level'] = min(max(state['stress_level'], 0), 1)
+        
         return action_performed, state
 
     def get_reward(self, state, coach_action, action_performed):
@@ -154,16 +162,18 @@ class PatientEnvironment(gym.Env):
                 reward += 0.2
             else:
                 reward -= 0.2
-
-            if state['motivation'] > 2 and coach_action == 6:
-                reward -= 1
-            elif state['motivation'] < 2 and coach_action == 6:
-                reward += 1
-
-            if state['stress_level'] > 0.7 and coach_action == 7:
-                reward += 0.5
-            elif state['stress_level'] < 0.5 and coach_action == 7:
-                reward -= 0.5
+            
+            if coach_action == 5:
+                if state['motivation'] < 2:
+                    reward += 1
+                else:
+                    reward -= 1
+            
+            if coach_action == 6:
+                if 100 <= state['glucose_level'] <= 125:
+                    reward += 0.5
+                else:
+                    reward -= 0.5
         else:
             reward -= 1
 
@@ -183,7 +193,7 @@ class PatientEnvironment(gym.Env):
 
         info = {'action_performed': action_performed}
         
-        self.current_patient_index = (self.current_patient_index + 1) % self.total_patients
+   #    self.current_patient_index = (self.current_patient_index + 1) % self.total_patients
         self.current_step += 1
         
         return observation, reward, terminated, truncated, info

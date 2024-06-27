@@ -2,15 +2,20 @@ import pandas as pd
 import numpy as np
 import random
 
-def generate_patient(age_group, base_values, noise_level=0.05):
+def generate_patient(age_group, base_values, glucose_variation='normal', noise_level=0.10):
+    glucose_factor = {
+        'lower': 0.8,
+        'normal': 1.0,
+        'higher': 1.2
+    }[glucose_variation]
+
     patient = {
         'age': np.random.randint(age_group[0], age_group[1] + 1),
-        'years_T2DM': max(0, int(10 * (1 + np.random.uniform(-noise_level, noise_level)))),
+        'years_T2DM': max(0, int(base_values['years_T2DM'] * (1 + np.random.uniform(-noise_level, noise_level)))),
         'physical_activity': max(0, min(5, int(np.random.uniform(0, 5) * (1 + np.random.uniform(-noise_level, noise_level))))),
-        'glucose_level': round(max(100, min(355, 150 * (1 + np.random.uniform(-noise_level, noise_level)))), 2),
-        'weight': round(max(100, int(110 * (1 + np.random.uniform(-noise_level, noise_level)))), 2),
+        'glucose_level': round(max(100, min(355, base_values['glucose_level'] * glucose_factor * (1 + np.random.uniform(-noise_level, noise_level)))), 2),
+        'weight': round(max(100, base_values['weight'] * (1 + np.random.uniform(-noise_level, noise_level))), 2),
         'motivation': round(max(0, min(4, np.random.uniform(0, 4) * (1 + np.random.uniform(-noise_level, noise_level)))), 2),
-        'stress_level': round(max(0, min(1, 0.5 * (1 + np.random.uniform(-noise_level, noise_level)))), 2)
     }
     return patient
 
@@ -25,16 +30,19 @@ def create_dataset(seed=421):
         'glucose_level': 150,
         'weight': 110,
         'motivation': 2,
-        'stress_level': 0.5
     }
 
     patients = []
+    glucose_variations = ['normal', 'lower', 'higher']
     for age_group in age_groups:
-        for _ in range(1):
-            patients.append(generate_patient(age_group, base_values))
+        for variation in glucose_variations:
+            for _ in range(3):
+                patients.append(generate_patient(age_group, base_values, glucose_variation=variation))
 
     patient_df = pd.DataFrame(patients)
-    patient_df.to_csv("patients_data_grouped_one.csv", index=False)
+    patient_df.to_csv("patients_data_grouped.csv", index=False)
+    return patient_df
 
 if __name__ == "__main__":
-    create_dataset()
+    patient_df = create_dataset()
+    print(patient_df.head())
