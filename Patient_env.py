@@ -5,12 +5,12 @@ import random
 from gymnasium import spaces
 
 class PatientEnvironment(gym.Env):
-    def __init__(self, data_file="patients_data_grouped_one.csv"):
+    def __init__(self, data_file="patients_data_grouped.csv"):
         super(PatientEnvironment, self).__init__()
 
         self.observation_space = spaces.Box(
-            low=np.array([18, 0, 0, 100, 80]), 
-            high=np.array([90, 5, 4, 355, 200]), 
+            low=np.array([18, 0, 100, 80, 0]), 
+            high=np.array([90, 5, 355, 200, 4]), 
             dtype=np.float32
         )
         self.action_space = spaces.Discrete(7)
@@ -23,38 +23,30 @@ class PatientEnvironment(gym.Env):
         self.actions_in_row = {i: None for i in range(self.total_patients)}
         self.count_in_row = {i: 0 for i in range(self.total_patients)}
 
-    # def reset(self, seed=None):
-    #     if seed is not None:
-    #         np.random.seed(seed)
-    #         random.seed(seed)
-    #     self.current_patient_index = 0
-    #     self.current_step = 0
-    #     self.patient_states = [self._get_patient_state(i) for i in range(self.total_patients)]
-    #     self.actions_in_row = {i: None for i in range(self.total_patients)}
-    #     self.count_in_row = {i: 0 for i in range(self.total_patients)}
-    #     observation = self.get_observation(self.patient_states[self.current_patient_index])
-    #     return observation, {}
-
     def reset(self, seed=None, patient_index=None):
         if seed is not None:
             np.random.seed(seed)
             random.seed(seed)
-        self.current_patient_index = patient_index if patient_index is not None else random.randint(0, self.total_patients - 1)
+        if patient_index is not None:
+            self.current_patient_index = patient_index
+        else:
+            self.current_patient_index = 0
         self.current_step = 0
+        self.patient_states = [self._get_patient_state(i) for i in range(self.total_patients)]
         self.actions_in_row = {i: None for i in range(self.total_patients)}
         self.count_in_row = {i: 0 for i in range(self.total_patients)}
         observation = self.get_observation(self.patient_states[self.current_patient_index])
         return observation, {}
-
+        
     def _get_patient_state(self, index):
         patient = self.patient_data.iloc[index]
         return {
             'age': patient.age,
             'years_T2DM': patient.years_T2DM,
             'physical_activity': patient.physical_activity,
-            'motivation': patient.motivation,
             'glucose_level': patient.glucose_level,
             'weight': patient.weight,
+            'motivation': patient.motivation,
         }
 
     def get_observation(self, state):
@@ -62,15 +54,19 @@ class PatientEnvironment(gym.Env):
         observation = np.array([
             state['age'], 
             state['physical_activity'],
-            state['motivation'],
             state['glucose_level'] + glucose_meter_noise, 
             state['weight'],
+            state['motivation'],
         ], dtype=np.float32)
+
+        #print(f"Observation: Age: {state['age']}, Physical Activity: {state['physical_activity']}, Motivation: {state['motivation']}, Glucose Level: {state['glucose_level'] + glucose_meter_noise}, Weight: {state['weight']}")
+        
         observation = np.clip(observation, self.observation_space.low, self.observation_space.high)
+
         return observation
 
     def next_glucose(self, state, effect, action_performed):
-        base_fluctuations = random.uniform(-5, 5) 
+        base_fluctuations = random.uniform(-5, 5)
         age_factor = 5 if state['age'] < 30 else (10 if 30 <= state['age'] < 65 else 7)
         improvement_factor = 1.0
 
@@ -78,9 +74,14 @@ class PatientEnvironment(gym.Env):
             improvement_factor *= 0.7
 
         if action_performed:
-            return state['glucose_level'] + (base_fluctuations + age_factor) * improvement_factor + effect
+            new_glucose_level = state['glucose_level'] + (base_fluctuations + age_factor) * improvement_factor + effect
         else:
-            return state['glucose_level'] + 1.2 * ((base_fluctuations + age_factor) * improvement_factor + effect)
+            new_glucose_level = state['glucose_level'] + 1.2 * ((base_fluctuations + age_factor) * improvement_factor + effect)
+        
+        # Debugging new glucose level
+        #print(f"Calculated new glucose level: {new_glucose_level}")
+
+        return new_glucose_level
 
     def next_state(self, state, coach_action, patient_id):
         effect = 0
@@ -193,7 +194,10 @@ class PatientEnvironment(gym.Env):
 
         info = {'action_performed': action_performed}
         
-   #    self.current_patient_index = (self.current_patient_index + 1) % self.total_patients
+        
         self.current_step += 1
         
         return observation, reward, terminated, truncated, info
+
+    def set_patient_index(self, patient_index):
+        self.current_patient_index = patient_index
