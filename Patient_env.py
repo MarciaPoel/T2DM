@@ -5,7 +5,7 @@ import random
 from gymnasium import spaces
 
 class PatientEnvironment(gym.Env):
-    def __init__(self, data_file="patients_data_grouped.csv"):
+    def __init__(self, data_file="patients_data_grouped_one.csv"):
         super(PatientEnvironment, self).__init__()
 
         self.observation_space = spaces.Box(
@@ -22,11 +22,16 @@ class PatientEnvironment(gym.Env):
         self.current_step = 0
         self.actions_in_row = {i: None for i in range(self.total_patients)}
         self.count_in_row = {i: 0 for i in range(self.total_patients)}
+    
+    def seed(self, seed = None):
+        np.random.seed(seed)
+        random.seed(seed)
+        self.action_space.seed(seed)
+        self.observation_space.seed(seed)
 
     def reset(self, seed=None, patient_index=None):
         if seed is not None:
-            np.random.seed(seed)
-            random.seed(seed)
+            self.seed(seed)
         if patient_index is not None:
             self.current_patient_index = patient_index
         else:
@@ -153,30 +158,30 @@ class PatientEnvironment(gym.Env):
 
     def get_reward(self, state, coach_action, action_performed):
         reward = 0
-        if action_performed:
-            if 100 <= state['glucose_level'] <= 125:
+        #if action_performed:
+        if 100 <= state['glucose_level'] <= 125:
+            reward += 1
+        else:
+            reward -= 1
+
+        # if state['motivation'] > 2:
+        #     reward += 0.2
+        # else:
+        #     reward -= 0.2
+            
+        if coach_action == 5:
+            if state['motivation'] < 2:
                 reward += 1
             else:
                 reward -= 1
-
-            if state['motivation'] > 2:
-                reward += 0.2
+            
+        if coach_action == 6:
+            if 100 <= state['glucose_level'] <= 125:
+                reward += 0.5
             else:
-                reward -= 0.2
-            
-            if coach_action == 5:
-                if state['motivation'] < 2:
-                    reward += 1
-                else:
-                    reward -= 1
-            
-            if coach_action == 6:
-                if 100 <= state['glucose_level'] <= 125:
-                    reward += 0.5
-                else:
-                    reward -= 0.5
-        else:
-            reward -= 1
+                reward -= 0.5
+        #else:
+         #   reward -= 1
 
         return reward
 
