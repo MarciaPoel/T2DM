@@ -19,15 +19,15 @@ def generate_patient(age_group, base_values, glucose_variation='normal', noise_l
     }
     return patient
 
-def create_dataset(seed=421):
+def create_dataset(seed=567): #421 & 567
     np.random.seed(seed)
     random.seed(seed)
 
-    age_groups = [(18, 30), (31, 50), (51, 70), (71, 90)]
+    age_groups = [(18, 30), (31, 60), (65, 85)]
     base_values = {
         'years_T2DM': 10,
         'physical_activity': 3,
-        'glucose_level': 150,
+        'glucose_level': 180,
         'weight': 110,
         'motivation': 2,
     }
@@ -36,11 +36,11 @@ def create_dataset(seed=421):
     glucose_variations = ['normal', 'lower', 'higher']
     for age_group in age_groups:
         for variation in glucose_variations:
-            for _ in range(3):
+            for _ in range(5):
                 patients.append(generate_patient(age_group, base_values, glucose_variation=variation))
 
     patient_df = pd.DataFrame(patients)
-    patient_df.to_csv("patients_data_grouped.csv", index=False)
+    patient_df.to_csv("patients2.csv", index=False)
     return patient_df
 
 if __name__ == "__main__":
