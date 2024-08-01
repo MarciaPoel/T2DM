@@ -4,15 +4,12 @@ import glob
 import seaborn as sns
 
 
-# Define the pattern to find files for DQN and Random agents
 dqn_pattern = 'dqn/single_patient/10mln/NM/*dqn*.csv'
 random_pattern = 'dqn/single_patient/10mln/NM/*random*.csv'
 
-# Use glob to find all matching files
 dqn_files = glob.glob(dqn_pattern)
 random_files = glob.glob(random_pattern)
 
-# Function to load and label data
 def load_data(files, agent_type):
     all_data = []
     for file in files:
@@ -21,18 +18,12 @@ def load_data(files, agent_type):
         all_data.append(data)
     return pd.concat(all_data, ignore_index=True)
 
-# Load and concatenate data
+
 dqn_data = load_data(dqn_files, 'DQN')
 random_data = load_data(random_files, 'Random')
-
-# Combine both datasets
 combined_data = pd.concat([dqn_data, random_data], ignore_index=True)
-
-# Define age groups and labels
 age_bins = [0, 35, 60, 100]
 age_labels = ['Young', 'Middle', 'Senior']
-
-# Categorize the data into age groups
 combined_data['Age_Group'] = pd.cut(combined_data['Age'], bins=age_bins, labels=age_labels, right=False)
 
 def print_aggregated_metrics(data, metric, title):
@@ -45,12 +36,11 @@ def print_aggregated_metrics(data, metric, title):
     ).reset_index()
     print(grouped.to_string(index=False))
 
-# Calculate and print the metrics for Reward, Glucose Level, and Motivation
+
 print_aggregated_metrics(combined_data, 'Reward', 'Reward Metrics')
 print_aggregated_metrics(combined_data, 'Glucose_Level', 'Glucose Level Metrics')
 print_aggregated_metrics(combined_data, 'Motivation', 'Motivation Metrics')
 
-# Function to plot metrics with separate data for each agent
 def plot_metric_combined(metric, ylabel, title_prefix, filename):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12))
 
@@ -94,11 +84,11 @@ sns.boxplot(data=combined_data, x='Age_Group', y='Motivation', hue='Agent_Type',
             medianprops={'color': 'black', 'linewidth': 2},
             whiskerprops={'color': 'black', 'linewidth': 1.5})
 
-# Customizing the appearance
+
 plt.title('Average Motivation Distribution')
 plt.xlabel('Age Group')
 plt.ylabel('Motivation level')
 plt.legend(title='Agent Type')
 plt.tight_layout()
-plt.savefig('dqn/single_patient/10mln/NM/motivation_boxplot_outline.png')
+plt.savefig('dqn/single_patient/10mln/NM/motivation_boxplot_outline.png', dpi=600)
 plt.close()
