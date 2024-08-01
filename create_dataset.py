@@ -19,7 +19,7 @@ def generate_patient(age_group, base_values, glucose_variation='normal', noise_l
     }
     return patient
 
-def create_dataset(seed=567): #421 & 567
+def create_dataset(seed=421):
     np.random.seed(seed)
     random.seed(seed)
 

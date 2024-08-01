@@ -2,7 +2,7 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import BaseCallback
-from environment import PatientEnvironment
+from env_no_motiv import PatientEnvironment
 import csv
 import os
 import numpy as np
@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load single patient data
-file_path = "single_young_567.csv"  # Replace with the actual file name
+file_path = "single_young_421.csv"  # Replace with the actual file name
 patient_data = pd.read_csv(file_path)
 
 print("Initializing environment...")
 env = PatientEnvironment(data_file=file_path)
 
 # Initialize the DQN model
-total_timesteps = 10_000_000
+total_timesteps = 1_000_000
 model = DQN("MlpPolicy", env, verbose=1,
             learning_rate=0.0001,
             exploration_initial_eps=1.0,
@@ -42,10 +42,10 @@ progress_callback = ProgressCallback(check_freq=10000)
 # # Training Phase
 model.learn(total_timesteps=total_timesteps, callback=progress_callback)
 print("Model learning completed.")
-model.save("dqn/single_patient/10mln/dqn_patient_model_567NM")
+model.save("dqn/single_patient/10mln/dqn_patient_model_young_421NM")
 print("Model saved.")
 print("Loading model...")
-model = DQN.load("dqn/single_patient/10mln/dqn_patient_model_567")
+model = DQN.load("dqn/single_patient/10mln/dqn_patient_model_young_421NM")
 print("Model loaded.")
 
 # Define the minimum and maximum possible rewards
@@ -153,10 +153,10 @@ def run_simulation(agent, env, patient_data, csv_filename1, csv_filename2, num_e
     return mean_rewards, std_rewards, mean_glucose, mean_motivation, mean_step_rewards, mean_step_glucose, mean_step_motivation, np.mean(terminated_counts)
 
 # File names for logs
-dqn_csv_filename1 = 'dqn/single_patient/10mln/patient_simulation_dqn_567.csv'
-dqn_csv_filename2 = 'dqn/single_patient/10mln/decisions_log_dqn_567.csv'
-random_csv_filename1 = 'dqn/single_patient/10mln/patient_simulation_random_567.csv'
-random_csv_filename2 = 'dqn/single_patient/10mln/decisions_log_random_567.csv'
+dqn_csv_filename1 = 'dqn/single_patient/10mln/patient_simulation_dqn_young_421NM.csv'
+dqn_csv_filename2 = 'dqn/single_patient/10mln/decisions_log_dqn_young_421NM.csv'
+random_csv_filename1 = 'dqn/single_patient/10mln/patient_simulation_random_young_421NM.csv'
+random_csv_filename2 = 'dqn/single_patient/10mln/decisions_log_random_young_421NM.csv'
 
 # Evaluate the DQN agent
 dqn_mean_rewards, dqn_std_rewards, dqn_mean_glucose, dqn_mean_motivation, dqn_mean_step_rewards, dqn_mean_step_glucose, dqn_mean_step_motivation, dqn_terminated_count = run_simulation(

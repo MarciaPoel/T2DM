@@ -5,7 +5,7 @@ import random
 from gymnasium import spaces
 
 class PatientEnvironment(gym.Env):
-    def __init__(self, data_file="single_young_567.csv", log_file="log_single_young_567.csv"):
+    def __init__(self, data_file="single_young_421.csv", log_file="log_single_young_421.csv"):
         super(PatientEnvironment, self).__init__()
 
         self.observation_space = spaces.Box(low=np.array([18, 0, 90, 80]), high=np.array([90, 5, 355, 200]), dtype=np.float32)

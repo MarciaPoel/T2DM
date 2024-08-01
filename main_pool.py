@@ -2,7 +2,7 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import BaseCallback
-from environment import PatientEnvironment
+from env_no_motiv import PatientEnvironment
 import csv
 import os
 import numpy as np
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load patient data
-file_path = "patients2.csv"
+file_path = "patients.csv"
 patients_df = pd.read_csv(file_path)
 
 # Define age groups
@@ -35,7 +35,7 @@ model = DQN("MlpPolicy", env, verbose=1,
     exploration_fraction=0.5
 )
 
-os.makedirs("dqn/age_group/10mln/M/", exist_ok=True)
+os.makedirs("dqn/age_group/10mln/NM/", exist_ok=True)
 print("Learning model...")
 
 class ProgressCallback(BaseCallback):
@@ -51,12 +51,12 @@ class ProgressCallback(BaseCallback):
 progress_callback = ProgressCallback(check_freq=10000)
 
 #Training Phase
-model.learn(total_timesteps=total_timesteps, callback=progress_callback)
-print("Model learning completed.")
-model.save("dqn/age_group/10mln/M/dqn_patient_model")
-print("Model saved.")
+# model.learn(total_timesteps=total_timesteps, callback=progress_callback)
+# print("Model learning completed.")
+# model.save("dqn/age_group/10mln/M/dqn_patient_model")
+# print("Model saved.")
 print("Loading model...")
-model = DQN.load("dqn/age_group/10mln/M/dqn_patient_model")
+model = DQN.load("dqn/age_group/10mln/NM/dqn_patient_model")
 print("Model loaded.")
 
 # Define the minimum and maximum possible rewards
@@ -249,10 +249,10 @@ for i, patient_data in patients_df.iterrows():
     print(f"Running simulation for patient {i+1}/{len(patients_df)} in age group {age_group}...")
 
     # File names for logs
-    dqn_csv_filename1 = f'dqn/age_group/10mln/M/patient_simulation_dqn_{age_group}_{i+1}_2.csv'
-    dqn_csv_filename2 = f'dqn/age_group/10mln/M/decisions_log_dqn_{age_group}_{i+1}_2.csv'
-    random_csv_filename1 = f'dqn/age_group/10mln/M/patient_simulation_random_{age_group}_{i+1}_2.csv'
-    random_csv_filename2 = f'dqn/age_group/10mln/M/decisions_log_random_{age_group}_{i+1}_2.csv'
+    dqn_csv_filename1 = f'dqn/age_group/10mln/NM/patient_simulation_dqn_{age_group}_{i+1}.csv'
+    dqn_csv_filename2 = f'dqn/age_group/10mln/NM/decisions_log_dqn_{age_group}_{i+1}.csv'
+    random_csv_filename1 = f'dqn/age_group/10mln/NM/patient_simulation_random_{age_group}_{i+1}.csv'
+    random_csv_filename2 = f'dqn/age_group/10mln/NM/decisions_log_random_{age_group}_{i+1}.csv'
     
     # Evaluate the DQN agent
     dqn_mean_rewards, dqn_std_rewards, dqn_mean_glucose, dqn_mean_motivation, dqn_mean_step_rewards, dqn_mean_step_glucose, dqn_mean_step_motivation, dqn_terminated_count = run_simulation(
@@ -292,9 +292,9 @@ def plot_aggregated_results_together(results, metric, title, ylabel, filename):
     plt.close()
 
 # Example usage for rewards, glucose levels, and motivation levels
-plot_aggregated_results_together(results, 'rewards', 'Normalized Average Reward per Episode', 'Reward', 'dqn/age_group/10mln/M/aggregated_rewards_comparison.png')
-plot_aggregated_results_together(results, 'glucose_levels', 'Average Glucose Level per Episode', 'Glucose Level', 'dqn/age_group/10mln/M/aggregated_glucose_comparison.png')
-plot_aggregated_results_together(results, 'motivation_levels', 'Average Motivation Level per Episode', 'Motivation Level', 'dqn/age_group/10mln/M/aggregated_motivation_comparison.png')
+plot_aggregated_results_together(results, 'rewards', 'Normalized Average Reward per Episode', 'Reward', 'dqn/age_group/10mln/NM/aggregated_rewards_comparison.png')
+plot_aggregated_results_together(results, 'glucose_levels', 'Average Glucose Level per Episode', 'Glucose Level', 'dqn/age_group/10mln/NM/aggregated_glucose_comparison.png')
+plot_aggregated_results_together(results, 'motivation_levels', 'Average Motivation Level per Episode', 'Motivation Level', 'dqn/age_group/10mln/NM/aggregated_motivation_comparison.png')
 
 def plot_aggregated_step_results_together(results, metric, title, ylabel, filename):
     plt.figure(figsize=(14, 6))
@@ -314,9 +314,9 @@ def plot_aggregated_step_results_together(results, metric, title, ylabel, filena
     plt.close()
 
 # Example usage for step-wise metrics
-plot_aggregated_step_results_together(results, 'step_rewards', 'Average Reward per Step', 'Reward', 'dqn/age_group/10mln/M/aggregated_step_rewards_comparison.png')
-plot_aggregated_step_results_together(results, 'step_glucose', 'Average Glucose Level per Step', 'Glucose Level', 'dqn/age_group/10mln/M/aggregated_step_glucose_comparison.png')
-plot_aggregated_step_results_together(results, 'step_motivation', 'Average Motivation Level per Step', 'Motivation Level', 'dqn/age_group/10mln/M/aggregated_step_motivation_comparison.png')
+plot_aggregated_step_results_together(results, 'step_rewards', 'Average Reward per Step', 'Reward', 'dqn/age_group/10mln/NM/aggregated_step_rewards_comparison.png')
+plot_aggregated_step_results_together(results, 'step_glucose', 'Average Glucose Level per Step', 'Glucose Level', 'dqn/age_group/10mln/NM/aggregated_step_glucose_comparison.png')
+plot_aggregated_step_results_together(results, 'step_motivation', 'Average Motivation Level per Step', 'Motivation Level', 'dqn/age_group/10mln/NM/aggregated_step_motivation_comparison.png')
 
 def plot_box_plots_together(results, metric, title, ylabel, filename):
     plt.figure(figsize=(14, 6))
@@ -335,6 +335,6 @@ def plot_box_plots_together(results, metric, title, ylabel, filename):
     plt.close()
 
 # Example usage for boxplots
-plot_box_plots_together(results, 'rewards', 'Average Reward Distribution', 'Reward', 'dqn/age_group/10mln/M/boxplot_rewards_comparison.png')
-plot_box_plots_together(results, 'glucose_levels', 'Average Glucose Level Distribution', 'Glucose Level', 'dqn/age_group/10mln/M/boxplot_glucose_comparison.png')
-plot_box_plots_together(results, 'motivation_levels', 'Average Motivation Level Distribution', 'Motivation Level', 'dqn/age_group/10mln/M/boxplot_motivation_comparison.png')
+plot_box_plots_together(results, 'rewards', 'Average Reward Distribution', 'Reward', 'dqn/age_group/10mln/NM/boxplot_rewards_comparison.png')
+plot_box_plots_together(results, 'glucose_levels', 'Average Glucose Level Distribution', 'Glucose Level', 'dqn/age_group/10mln/NM/boxplot_glucose_comparison.png')
+plot_box_plots_together(results, 'motivation_levels', 'Average Motivation Level Distribution', 'Motivation Level', 'dqn/age_group/10mln/NM/boxplot_motivation_comparison.png')

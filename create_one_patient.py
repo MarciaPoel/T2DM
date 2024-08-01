@@ -13,7 +13,7 @@ def generate_patient(age_group, base_values, noise_level=0.05):
     }
     return patient
 
-def single_patient(seed=650, age_group=(65,90)):
+def single_patient(seed=421, age_group=(65,90)):
     np.random.seed(seed)
     random.seed(seed)
 
@@ -27,7 +27,7 @@ def single_patient(seed=650, age_group=(65,90)):
 
     patient = generate_patient(age_group, base_values)
     patient_df = pd.DataFrame([patient])
-    patient_df.to_csv("single_old_600.csv", index=False)
+    patient_df.to_csv("single_old_421.csv", index=False)
 
 if __name__ == "__main__":
     single_patient()
