@@ -166,66 +166,66 @@ dqn_mean_rewards, dqn_std_rewards, dqn_mean_glucose, dqn_mean_motivation, dqn_me
 random_mean_rewards, random_std_rewards, random_mean_glucose, random_mean_motivation, random_mean_step_rewards, random_mean_step_glucose, random_mean_step_motivation, random_terminated_count = run_simulation(
     None, env, patient_data, random_csv_filename1, random_csv_filename2, num_episodes=30, num_steps=365, num_runs=5)
 
-# def plot_results_together(dqn_mean, dqn_std, random_mean, random_std, title, ylabel, filename):
-#     plt.figure(figsize=(14, 6))
-#     episodes = range(len(dqn_mean))
+def plot_results_together(dqn_mean, dqn_std, random_mean, random_std, title, ylabel, filename):
+    plt.figure(figsize=(14, 6))
+    episodes = range(len(dqn_mean))
     
-#     plt.errorbar(episodes, dqn_mean, yerr=dqn_std, label='DQN Agent', fmt='-o', capsize=5)
-#     plt.errorbar(episodes, random_mean, yerr=random_std, label='Random Agent', fmt='-s', capsize=5)
+    plt.errorbar(episodes, dqn_mean, yerr=dqn_std, label='DQN Agent', fmt='-o', capsize=5)
+    plt.errorbar(episodes, random_mean, yerr=random_std, label='Random Agent', fmt='-s', capsize=5)
     
-#     plt.xlabel('Episode')
-#     plt.ylabel(ylabel)
-#     plt.title(title)
-#     plt.legend()
-#     plt.tight_layout()
-#     plt.savefig(filename)
-#     plt.close()
+    plt.xlabel('Episode')
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close()
 
-# # Plot the results for both agents together
-# plot_results_together(dqn_mean_rewards, dqn_std_rewards, random_mean_rewards, random_std_rewards, 'Normalized Average Reward per Episode', 'Normalized Reward', 'dqn/single_patient/10mln/rewards_comparison.png')
-# plot_results_together(dqn_mean_glucose, np.zeros_like(dqn_mean_glucose), random_mean_glucose, np.zeros_like(random_mean_glucose), 'Average Glucose Level per Episode', 'Glucose Level', 'dqn/single_patient/10mln/glucose_comparison.png')
-# plot_results_together(dqn_mean_motivation, np.zeros_like(dqn_mean_motivation), random_mean_motivation, np.zeros_like(random_mean_motivation), 'Average Motivation Level per Episode', 'Motivation Level', 'dqn/single_patient/10mln/motivation_comparison.png')
+# Plot the results for both agents together
+plot_results_together(dqn_mean_rewards, dqn_std_rewards, random_mean_rewards, random_std_rewards, 'Normalized Average Reward per Episode', 'Normalized Reward', 'dqn/single_patient/10mln/rewards_comparison.png')
+plot_results_together(dqn_mean_glucose, np.zeros_like(dqn_mean_glucose), random_mean_glucose, np.zeros_like(random_mean_glucose), 'Average Glucose Level per Episode', 'Glucose Level', 'dqn/single_patient/10mln/glucose_comparison.png')
+plot_results_together(dqn_mean_motivation, np.zeros_like(dqn_mean_motivation), random_mean_motivation, np.zeros_like(random_mean_motivation), 'Average Motivation Level per Episode', 'Motivation Level', 'dqn/single_patient/10mln/motivation_comparison.png')
 
-# def plot_step_results_together(dqn_mean, dqn_std, random_mean, random_std, title, ylabel, filename):
-#     plt.figure(figsize=(14, 6))
-#     steps = range(len(dqn_mean))
+def plot_step_results_together(dqn_mean, dqn_std, random_mean, random_std, title, ylabel, filename):
+    plt.figure(figsize=(14, 6))
+    steps = range(len(dqn_mean))
     
-#     plt.errorbar(steps, dqn_mean, yerr=dqn_std, label='DQN Agent', fmt='-o', capsize=5)
-#     plt.errorbar(steps, random_mean, yerr=random_std, label='Random Agent', fmt='-s', capsize=5)
+    plt.errorbar(steps, dqn_mean, yerr=dqn_std, label='DQN Agent', fmt='-o', capsize=5)
+    plt.errorbar(steps, random_mean, yerr=random_std, label='Random Agent', fmt='-s', capsize=5)
     
-#     plt.xlabel('Step')
-#     plt.ylabel(ylabel)
-#     plt.title(title)
-#     plt.legend()
-#     plt.tight_layout()
-#     plt.savefig(filename)
-#     plt.close()
+    plt.xlabel('Step')
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close()
 
-# # Plot the step-wise results for both agents together
-# plot_step_results_together(dqn_mean_step_rewards, np.zeros_like(dqn_mean_step_rewards), random_mean_step_rewards, np.zeros_like(random_mean_step_rewards),
-# 'Average Reward per Step', 'Reward', 'dqn/single_patient/10mln/step_rewards_comparison.png')
-# plot_step_results_together(dqn_mean_step_glucose, np.zeros_like(dqn_mean_step_glucose), random_mean_step_glucose, np.zeros_like(random_mean_step_glucose),
-# 'Average Glucose Level per Step', 'Glucose Level', 'dqn/single_patient/10mln/step_glucose_comparison.png')
-# plot_step_results_together(dqn_mean_step_motivation, np.zeros_like(dqn_mean_step_motivation), random_mean_step_motivation, np.zeros_like(random_mean_step_motivation),
-# 'Average Motivation Level per Step', 'Motivation Level', 'dqn/single_patient/10mln/step_motivation_comparison.png')
+# Plot the step-wise results for both agents together
+plot_step_results_together(dqn_mean_step_rewards, np.zeros_like(dqn_mean_step_rewards), random_mean_step_rewards, np.zeros_like(random_mean_step_rewards),
+'Average Reward per Step', 'Reward', 'dqn/single_patient/10mln/step_rewards_comparison.png')
+plot_step_results_together(dqn_mean_step_glucose, np.zeros_like(dqn_mean_step_glucose), random_mean_step_glucose, np.zeros_like(random_mean_step_glucose),
+'Average Glucose Level per Step', 'Glucose Level', 'dqn/single_patient/10mln/step_glucose_comparison.png')
+plot_step_results_together(dqn_mean_step_motivation, np.zeros_like(dqn_mean_step_motivation), random_mean_step_motivation, np.zeros_like(random_mean_step_motivation),
+'Average Motivation Level per Step', 'Motivation Level', 'dqn/single_patient/10mln/step_motivation_comparison.png')
 
-# def plot_box_plots_together(dqn_data, random_data, title, ylabel, filename):
-#     plt.figure(figsize=(14, 6))
-#     data = [dqn_data, random_data]
-#     labels = ['DQN', 'Random']
-#     plt.boxplot(data, labels=labels)
-#     plt.ylabel(ylabel)
-#     plt.title(title)
-#     plt.tight_layout()
-#     plt.savefig(filename)
-#     plt.close()
+def plot_box_plots_together(dqn_data, random_data, title, ylabel, filename):
+    plt.figure(figsize=(14, 6))
+    data = [dqn_data, random_data]
+    labels = ['DQN', 'Random']
+    plt.boxplot(data, labels=labels)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(filename)
+    plt.close()
 
-# #Box plots for episode-wise metrics
-# plot_box_plots_together(dqn_mean_rewards, random_mean_rewards, 'Average Reward Distribution per Episode', 'Normalized Reward', 'dqn/single_patient/10mln/boxplot_rewards.png')
-# plot_box_plots_together(dqn_mean_glucose, random_mean_glucose, 'Average Glucose Level Distribution per Episode', 'Glucose Level', 'dqn/single_patient/10mln/boxplot_glucose.png')
-# plot_box_plots_together(dqn_mean_motivation, random_mean_motivation, 'Average Motivation Level Distribution per Episode', 'Motivation Level', 'dqn/single_patient/10mln/boxplot_motivation.png')
+#Box plots for episode-wise metrics
+plot_box_plots_together(dqn_mean_rewards, random_mean_rewards, 'Average Reward Distribution per Episode', 'Normalized Reward', 'dqn/single_patient/10mln/boxplot_rewards.png')
+plot_box_plots_together(dqn_mean_glucose, random_mean_glucose, 'Average Glucose Level Distribution per Episode', 'Glucose Level', 'dqn/single_patient/10mln/boxplot_glucose.png')
+plot_box_plots_together(dqn_mean_motivation, random_mean_motivation, 'Average Motivation Level Distribution per Episode', 'Motivation Level', 'dqn/single_patient/10mln/boxplot_motivation.png')
 
-# #Box plots for step-wise metrics
-# plot_box_plots_together(dqn_mean_step_rewards, random_mean_step_rewards, 'Average Reward Distribution per Step', 'Reward', 'dqn/single_patient/10mln/boxplot_step_rewards.png')
-# plot_box_plots_together(dqn_mean_step_glucose, random_mean_step_glucose, 'Average Glucose Level Distribution per Step', 'Glucose Level', 'dqn/single_patient/10mln/boxplot_step_glucose.png')
-# plot_box_plots_together(dqn_mean_step_motivation, random_mean_step_motivation, 'Average Motivation Level Distribution per Step', 'Motivation Level', 'dqn/single_patient/10mln/boxplot_step_motivation.png')
+#Box plots for step-wise metrics
+plot_box_plots_together(dqn_mean_step_rewards, random_mean_step_rewards, 'Average Reward Distribution per Step', 'Reward', 'dqn/single_patient/10mln/boxplot_step_rewards.png')
+plot_box_plots_together(dqn_mean_step_glucose, random_mean_step_glucose, 'Average Glucose Level Distribution per Step', 'Glucose Level', 'dqn/single_patient/10mln/boxplot_step_glucose.png')
+plot_box_plots_together(dqn_mean_step_motivation, random_mean_step_motivation, 'Average Motivation Level Distribution per Step', 'Motivation Level', 'dqn/single_patient/10mln/boxplot_step_motivation.png')

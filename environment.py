@@ -82,7 +82,6 @@ class PatientEnvironment(gym.Env):
         effect = 0
         action_performed = False
 
-        # Determine if the advice is followed based on the current state
         if coach_action in [1, 2]:  # Physical activities
             if self.state['physical_activity'] <= 2 or self.state['motivation'] < 2:
                 action_performed = False
@@ -101,7 +100,6 @@ class PatientEnvironment(gym.Env):
             if self.state['motivation'] < 2:
                 action_performed = True
 
-        # Handle consecutive advice
         if action_performed:
             if coach_action == self.previous_action:
                 self.advice_in_row += 1
@@ -109,7 +107,6 @@ class PatientEnvironment(gym.Env):
                 self.advice_in_row = 1
                 self.previous_action = coach_action
 
-            # Calculate the effect based on the action
             age_factor = 1.0
             if self.state['age'] < 30:
                 age_factor = 1.5
@@ -135,11 +132,9 @@ class PatientEnvironment(gym.Env):
                 effect = 0
                 self.state['motivation'] += 0.1
 
-            # Additional motivation adjustments
             if coach_action in [1, 2] and self.advice_in_row == 3:
                 self.state['motivation'] = min(max(self.state['motivation'] + 0.1 + random.uniform(-0.1, 0.1), 0), 4)
 
-        # Update glucose level based on the action performed
         self.state['glucose_level'] = self.next_glucose(self.state, effect, action_performed)
         self.state['glucose_level'] = max(100, self.state['glucose_level'])
         self.state['motivation'] = max(0, min(self.state['motivation'], 4))
@@ -147,42 +142,6 @@ class PatientEnvironment(gym.Env):
         self.action_performed = action_performed
         return action_performed
    
-
-    # def potential(self, state):
-    #     # Potential function based on how close the glucose level is to the target range
-    #     # Normalizing the penalty to keep the values small
-    #     if 100 <= state['glucose_level'] <= 125:
-    #         return 0  # Best case, in the target range
-    #     elif state['glucose_level'] < 100:
-    #         return (100 - state['glucose_level']) / 100  # Normalized penalty for being too low
-    #     else:
-    #         return (state['glucose_level'] - 125) / 100  # Normalized penalty for being too high
-
-
-    # def get_reward(self, state, coach_action, action_performed):
-        reward = 0
-        if 100 <= state['glucose_level'] <= 125:
-            reward += 1
-        else:
-            reward -= 1
-
-        # Original reward
-        original_reward = reward
-
-        # Potential-based reward shaping
-        gamma = 0.99  # Discount factor, typically same as used in the DQN
-        next_state = self.state.copy()
-        next_state['glucose_level'] = self.next_glucose(state, action_performed, coach_action)
-
-        # Compute potential for current and next state
-        potential_current = self.potential(state)
-        potential_next = self.potential(next_state)
-
-        # Augment reward with potential-based shaping
-        reward = original_reward + gamma * potential_next - potential_current
-        
-        return reward
-
     def get_reward(self, state, coach_action, action_performed):
         reward = 0
         if action_performed:
