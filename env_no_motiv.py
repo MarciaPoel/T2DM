@@ -5,7 +5,7 @@ import random
 from gymnasium import spaces
 
 class PatientEnvironment(gym.Env):
-    def __init__(self, data_file="single_young_421.csv", log_file="log_single_young_421.csv"):
+    def __init__(self, data_file="patients.csv", log_file="patients.csv"):
         super(PatientEnvironment, self).__init__()
 
         self.observation_space = spaces.Box(low=np.array([18, 0, 90, 80]), high=np.array([90, 5, 355, 200]), dtype=np.float32)
@@ -94,9 +94,6 @@ class PatientEnvironment(gym.Env):
                 action_performed = False
             else:
                 action_performed = True
-        # elif coach_action == 5:
-        #     if self.state['motivation'] < 2:
-        #         action_performed = True
 
         if action_performed:
             if coach_action == self.previous_action:
